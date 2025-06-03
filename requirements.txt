@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+transformers
+torch
+pillow
+scikit-learn
+gcsfs
+sqlalchemy
+pandas
+ultralytics
+opencv-python-headless
