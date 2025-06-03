@@ -22,6 +22,7 @@
     RUN pip install --no-cache-dir -r requirements.txt
     
     # ---- Set default command ----
-   CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--timeout-keep-alive", "240"]
+  CMD ["python", "-m", "uvicorn", "main:app", "--host=0.0.0.0", "--port=8080"]
+
 
     
