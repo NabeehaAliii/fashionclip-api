@@ -11,6 +11,8 @@ from difflib import SequenceMatcher
 import io
 import os
 import gcsfs
+import shutil
+
 from cv_utils import process_image_cv
 from crud import save_search_history, get_user_history
 from db import engine
@@ -18,34 +20,25 @@ from models import Base
 
 Base.metadata.create_all(bind=engine)  # Auto-create table on launch
 
-
-
 # ---------- CONFIG ----------
 BUCKET_NAME = "fashionclip-api"
-MODEL_PATH = f"{BUCKET_NAME}/model"
+MODEL_GCS_PATH = f"{BUCKET_NAME}/model"
 EMBEDDING_PATH = f"{BUCKET_NAME}/embeddings"
+LOCAL_MODEL_PATH = "/tmp/model"
 
 fs = gcsfs.GCSFileSystem(project="semesterproject")
 
-# ---------- APP SETUP ----------
-app = FastAPI()
+# ---------- DOWNLOAD MODEL FROM GCS ----------
+if not os.path.exists(LOCAL_MODEL_PATH):
+    os.makedirs(LOCAL_MODEL_PATH, exist_ok=True)
+    for remote_file in fs.ls(MODEL_GCS_PATH):
+        filename = os.path.basename(remote_file)
+        with fs.open(remote_file, 'rb') as fsrc, open(os.path.join(LOCAL_MODEL_PATH, filename), 'wb') as fdst:
+            shutil.copyfileobj(fsrc, fdst)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# ---------- LOAD MODEL ----------
-with fs.open(f"{MODEL_PATH}/config.json") as f:
-    config_data = f.read()
-with fs.open(f"{MODEL_PATH}/preprocessor_config.json") as f:
-    preproc_data = f.read()
-
-model = CLIPModel.from_pretrained(f"gs://{MODEL_PATH}")
-processor = CLIPProcessor.from_pretrained(f"gs://{MODEL_PATH}")
+# ---------- LOAD MODEL LOCALLY ----------
+model = CLIPModel.from_pretrained(LOCAL_MODEL_PATH)
+processor = CLIPProcessor.from_pretrained(LOCAL_MODEL_PATH)
 model.eval()
 
 # ---------- LOAD EMBEDDINGS ----------
@@ -60,20 +53,31 @@ with fs.open(f"{EMBEDDING_PATH}/caption_embeddings.npy", "rb") as f:
 image_embs = F.normalize(torch.tensor(image_embs), dim=-1).cpu().numpy()
 caption_embs = F.normalize(torch.tensor(caption_embs), dim=-1).cpu().numpy()
 
-# ---------- UTILS ----------
+# ---------- FastAPI Setup ----------
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ---------- Helper ----------
 def fuzzy_match(target, candidates, threshold=0.7):
     return any(SequenceMatcher(None, target.lower(), c.lower()).ratio() >= threshold for c in candidates)
 
-# ---------- ROUTES ----------
+# ---------- Routes ----------
 @app.get("/")
 def root():
-    return {"message": "FashionCLIP API is running with GCS integration!"}
+    return {"message": "FashionCLIP API is live with GCS-based model loading!"}
 
 @app.post("/search")
 def search(
     caption: str = Form(None),
     image: UploadFile = File(None),
-    user_id: str = Form("guest@user.com")  # can be passed from frontend
+    user_id: str = Form("guest@user.com")
 ):
     top_k = 2
 
