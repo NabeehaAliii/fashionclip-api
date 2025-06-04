@@ -9,3 +9,4 @@ sqlalchemy
 pandas
 ultralytics
 opencv-python-headless
+python-multipart
