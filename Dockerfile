@@ -24,8 +24,7 @@ COPY . /app
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-# ---- Expose the port explicitly (optional for documentation) ----
-EXPOSE 8080
+# Optional but good to expose for docs
+EXPOSE 7860
 
-# ---- Start the FastAPI app with Uvicorn ----
-CMD ["python", "main.py"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7860"]
