@@ -1,0 +1,7 @@
+# .gitignore
+*.bin
+*.pt
+*.npy
+*.h5
+*.ckpt
+model/
