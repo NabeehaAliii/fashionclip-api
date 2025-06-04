@@ -1,0 +1,17 @@
+# Enforce LF line endings for all text files
+* text=auto eol=lf
+
+# Ensure shell scripts and Python files use LF (especially important for Linux containers)
+*.sh text eol=lf
+*.py text eol=lf
+*.txt text eol=lf
+*.json text eol=lf
+*.csv text eol=lf
+
+# Binary files (do not modify line endings)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.bin binary
+*.pt binary
