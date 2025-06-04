@@ -95,7 +95,7 @@ def search(
     results = []
     for idx in top_indices:
         row = meta_df.iloc[idx]
-        image_url = f"https://storage.googleapis.com/{BUCKET_NAME}/{row.get('Downloaded Image Path', '')}"
+        image_url = row.get("Downloaded Image URL", "")
 
         results.append({
             "caption": row.get("Caption", "N/A"),
