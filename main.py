@@ -118,6 +118,12 @@ def history(user_id: str):
     user_logs = get_user_history(user_id)
     return {"history": user_logs}
 
+@app.delete("/user/history/clear")
+def clear_history(user_id: str):
+    from crud import clear_user_history
+    clear_user_history(user_id)
+    return {"message": f"Search history cleared for user: {user_id}"}
+
 import uvicorn
 
 if __name__ == "__main__":
