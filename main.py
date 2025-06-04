@@ -9,7 +9,6 @@ import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 from difflib import SequenceMatcher
 import io
-import os
 import gcsfs
 
 from cv_utils import process_image_cv
@@ -22,14 +21,13 @@ Base.metadata.create_all(bind=engine)  # Auto-create table on launch
 # ---------- CONFIG ----------
 BUCKET_NAME = "fashionclip-api"
 EMBEDDING_PATH = f"{BUCKET_NAME}/embeddings"
-LOCAL_MODEL_PATH = "./model"  # 📍 Now using local folder!
 
-# ---------- Load local model ----------
-model = CLIPModel.from_pretrained(LOCAL_MODEL_PATH)
-processor = CLIPProcessor.from_pretrained(LOCAL_MODEL_PATH)
+# ---------- Load model from Hugging Face Hub ----------
+model = CLIPModel.from_pretrained("alinabeeha/fashionclip-api")
+processor = CLIPProcessor.from_pretrained("alinabeeha/fashionclip-api")
 model.eval()
 
-# ---------- Load embeddings from GCS ----------
+# ---------- Load embeddings + metadata from GCS ----------
 fs = gcsfs.GCSFileSystem(project="semesterproject")
 
 with fs.open(f"{EMBEDDING_PATH}/MetaData.csv") as f:
@@ -37,6 +35,7 @@ with fs.open(f"{EMBEDDING_PATH}/MetaData.csv") as f:
 
 with fs.open(f"{EMBEDDING_PATH}/image_embeddings.npy", "rb") as f:
     image_embs = np.load(f)
+
 with fs.open(f"{EMBEDDING_PATH}/caption_embeddings.npy", "rb") as f:
     caption_embs = np.load(f)
 
@@ -61,7 +60,7 @@ def fuzzy_match(target, candidates, threshold=0.7):
 # ---------- Routes ----------
 @app.get("/")
 def root():
-    return {"message": "FashionCLIP API is running locally with GCS embeddings!"}
+    return {"message": "FashionCLIP API is running! Model from HuggingFace, embeddings from GCS."}
 
 @app.post("/search")
 def search(
