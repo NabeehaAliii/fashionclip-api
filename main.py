@@ -11,7 +11,6 @@ from difflib import SequenceMatcher
 import io
 import os
 import gcsfs
-import shutil
 
 from cv_utils import process_image_cv
 from crud import save_search_history, get_user_history
@@ -22,26 +21,17 @@ Base.metadata.create_all(bind=engine)  # Auto-create table on launch
 
 # ---------- CONFIG ----------
 BUCKET_NAME = "fashionclip-api"
-MODEL_GCS_PATH = f"{BUCKET_NAME}/model"
 EMBEDDING_PATH = f"{BUCKET_NAME}/embeddings"
-LOCAL_MODEL_PATH = "/tmp/model"
+LOCAL_MODEL_PATH = "./model"  # 📍 Now using local folder!
 
-fs = gcsfs.GCSFileSystem(project="semesterproject")
-
-# ---------- DOWNLOAD MODEL FROM GCS ----------
-if not os.path.exists(LOCAL_MODEL_PATH):
-    os.makedirs(LOCAL_MODEL_PATH, exist_ok=True)
-    for remote_file in fs.ls(MODEL_GCS_PATH):
-        filename = os.path.basename(remote_file)
-        with fs.open(remote_file, 'rb') as fsrc, open(os.path.join(LOCAL_MODEL_PATH, filename), 'wb') as fdst:
-            shutil.copyfileobj(fsrc, fdst)
-
-# ---------- LOAD MODEL LOCALLY ----------
+# ---------- Load local model ----------
 model = CLIPModel.from_pretrained(LOCAL_MODEL_PATH)
 processor = CLIPProcessor.from_pretrained(LOCAL_MODEL_PATH)
 model.eval()
 
-# ---------- LOAD EMBEDDINGS ----------
+# ---------- Load embeddings from GCS ----------
+fs = gcsfs.GCSFileSystem(project="semesterproject")
+
 with fs.open(f"{EMBEDDING_PATH}/MetaData.csv") as f:
     meta_df = pd.read_csv(f)
 
@@ -71,7 +61,7 @@ def fuzzy_match(target, candidates, threshold=0.7):
 # ---------- Routes ----------
 @app.get("/")
 def root():
-    return {"message": "FashionCLIP API is live with GCS-based model loading!"}
+    return {"message": "FashionCLIP API is running locally with GCS embeddings!"}
 
 @app.post("/search")
 def search(
